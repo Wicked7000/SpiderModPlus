@@ -1,6 +1,10 @@
 # SpiderMod+
 
-SpiderMod+ is a mod for _[The Binding of Isaac: Repentance](https://store.steampowered.com/app/1426300/The_Binding_of_Isaac_Repentance/)_, written in [TypeScript](https://www.typescriptlang.org/) using the [IsaacScript](https://isaacscript.github.io/) framework.
+Allows for health bars and damage to be visible against entities at all times even when not holding the Spider Mod
+item. If the original item is obtained this mods behaviour is overwritten and the default health and damage bars
+will be used instead.
+
+Created for _[The Binding of Isaac: Repentance](https://store.steampowered.com/app/1426300/The_Binding_of_Isaac_Repentance/)_, written in [TypeScript](https://www.typescriptlang.org/) using the [IsaacScript](https://isaacscript.github.io/) framework.
 
 ## How To Play
 

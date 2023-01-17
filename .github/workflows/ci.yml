@@ -26,9 +26,6 @@ jobs:
         if: steps.node-cache.outputs.cache-hit != 'true'
         run: yarn install --frozen-lockfile
 
-      - name: Install xmllint (which the "lint.sh" script uses)
-        run: sudo apt-get update && sudo apt-get install libxml2-utils -y
-
       - name: Test to see if the project compiles
         run: npm run build
 
