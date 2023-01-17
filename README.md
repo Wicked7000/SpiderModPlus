@@ -1,14 +1,24 @@
-# spider-mod
+# SpiderMod+
 
-spider-mod is a mod for _[The Binding of Isaac: Repentance](https://store.steampowered.com/app/1426300/The_Binding_of_Isaac_Repentance/)_, written in [TypeScript](https://www.typescriptlang.org/) using the [IsaacScript](https://isaacscript.github.io/) framework.
+SpiderMod+ is a mod for _[The Binding of Isaac: Repentance](https://store.steampowered.com/app/1426300/The_Binding_of_Isaac_Repentance/)_, written in [TypeScript](https://www.typescriptlang.org/) using the [IsaacScript](https://isaacscript.github.io/) framework.
 
 ## How To Play
 
-For normal people, you can play the mod by subscribing to it on [the Steam Workshop](https://steamcommunity.com/app/250900/workshop/). (Subscribing to the mod will automatically download and install it once you launch the game.)
+Subscribe to it on the workshop [Here](https://steamcommunity.com/sharedfiles/filedetails/?id=2918355263)
+
+## Developers
+
+### How to Remove Health/Damage from my custom entity
+
+There are two primary ways to do this:
+
+1. Make your entity a variant of GENERIC_PROP(960)
+2. Give your entity the flag of HIDE_HP_BAR (1 << 35)
+
+Either of the above should remove both the health and damage numbers from your entity.
+You won't have to do the above if your entity is a variant of an already blocked entity such as Stoney.
 
 ### How To Compile
-
-If you are a developer, or the mod is not yet uploaded to the Steam Workshop, you can play the mod by compiling the TypeScript code into a "main.lua" file. Perform the following steps:
 
 - Download and install [Node.js](https://nodejs.org/en/download/) (Windows Installer .msi, 64-bit).
 - Download and install [Git](https://git-scm.com/download/win) (64-bit Git for Windows setup).

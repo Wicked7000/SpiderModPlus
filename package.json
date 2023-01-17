@@ -1,7 +1,7 @@
 {
-  "name": "spider-mod",
+  "name": "SpiderMod+",
   "version": "0.0.0",
-  "description": "A mod for The Binding of Isaac: Repentance.",
+  "description": "Allows for permanent health and damage without the spider-mod item",
   "keywords": [
     "isaac",
     "mod",
@@ -11,6 +11,10 @@
   ],
   "license": "GPL-3.0",
   "type": "commonjs",
+  "scripts": {
+    "lint": "npx prettier --check . && npx eslint --max-warnings 0 src && npx cspell --no-progress --no-summary",
+    "build": "npx tstl"
+  },
   "dependencies": {
     "isaac-typescript-definitions": "^10.1.5",
     "isaacscript": "^3.4.0",

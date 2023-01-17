@@ -21,12 +21,15 @@
     "node_modules/**",
     "mod/main.lua",
     "mod/content/rooms/**",
-    "mod/resources/rooms/**"
+    "mod/resources/rooms/**",
+    ".vscode/**"
   ],
   "words": [
     "Healthbar",
     "Healthbars",
     "Spidermod",
-    "Spikeblock"
+    "Spikeblock",
+    "customise",
+    "behaviour"
   ]
 }

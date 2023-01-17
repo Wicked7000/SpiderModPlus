@@ -74,4 +74,5 @@
     "editor.formatOnSave": true,
     "editor.tabSize": 2,
   },
+  "cSpell.words": ["customise"],
 }
