@@ -1,9 +1,15 @@
 {
   "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
   "version": "0.2",
-  "import": ["isaacscript-spell/cspell-isaacscript.json"],
-  "files": ["**"],
-  "enableFiletypes": ["*"],
+  "import": [
+    "isaacscript-spell/cspell-isaacscript.json"
+  ],
+  "files": [
+    "**"
+  ],
+  "enableFiletypes": [
+    "*"
+  ],
   "enableGlobDot": true,
   "ignorePaths": [
     "*.anm2",
@@ -17,5 +23,10 @@
     "mod/content/rooms/**",
     "mod/resources/rooms/**"
   ],
-  "words": []
+  "words": [
+    "Healthbar",
+    "Healthbars",
+    "Spidermod",
+    "Spikeblock"
+  ]
 }
