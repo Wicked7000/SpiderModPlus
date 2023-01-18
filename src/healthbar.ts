@@ -121,12 +121,15 @@ const ensureVisible = (trackingDescriptor: TrackingDescriptor) => {
 // Only for dynamic entities.
 const checkIfHealthbarIsInvalid = (trackingDescriptor: TrackingDescriptor) => {
   if (
-    isDynamicEntity(trackingDescriptor.tracking) &&
-    !isAllowedEntity(trackingDescriptor.tracking) &&
-    trackingDescriptor.tracking.Exists()
+    !isAllowedEntity(trackingDescriptor.tracking) ||
+    trackingDescriptor.tracking.IsDead() ||
+    !trackingDescriptor.tracking.Exists() ||
+    (isDynamicEntity(trackingDescriptor.tracking) &&
+      trackingDescriptor.tracking.Parent !== undefined)
   ) {
     // Clear the descriptor
     removeHealthbar(trackingDescriptor.tracking);
+
     return true;
   }
   return false;

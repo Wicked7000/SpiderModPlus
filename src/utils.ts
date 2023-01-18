@@ -97,17 +97,19 @@ export const clearAllOnSpidermod = (): void => {
   }
 };
 
-const allowedEntityCache: Record<string, boolean> = {};
-
 // Entities that are segmented are considered 'dynamic'.
 export const isDynamicEntity = (entity: Entity): boolean =>
   [EntityType.CHUB, EntityType.LARRY_JR, EntityType.PIN].includes(entity.Type);
+
+const allowedEntityCache: Record<string, boolean> = {};
 
 /* We don't want to display damage for certain entities.
    Is not cached for dynamic (segmented) enemies.
 */
 export const isAllowedEntity = (entity: Entity, source?: "damage"): boolean => {
-  const entityId = `${getEntityID(entity)}:${entity.Parent !== undefined}`;
+  const entityId = `${getEntityID(entity)}:${
+    entity.Parent !== undefined
+  }:${entity.IsInvincible()}`;
   if (entityId in allowedEntityCache) {
     const value = allowedEntityCache[entityId];
     if (source !== "damage") {
@@ -121,8 +123,12 @@ export const isAllowedEntity = (entity: Entity, source?: "damage"): boolean => {
     return value ?? false;
   }
 
-  const isEnemy = entity.IsEnemy();
-  const canBeDamaged = entity.IsVulnerableEnemy();
+  const canBeDamaged =
+    entity.IsEnemy() &&
+    entity.IsVulnerableEnemy() &&
+    !entity.IsInvincible() &&
+    !entity.IsDead();
+  const isEffect = entity.ToEffect() !== undefined;
   const isPlayer = entity.ToPlayer() !== undefined;
   const hideHp = entity.HasEntityFlags(EntityFlag.HIDE_HP_BAR);
   const isGeminiConnection =
@@ -130,32 +136,14 @@ export const isAllowedEntity = (entity: Entity, source?: "damage"): boolean => {
   const childOfBoss = entity.Parent !== undefined && isDynamicEntity(entity);
 
   const blockedTypes = [
-    EntityType.POKY,
-    EntityType.WALL_HUGGER,
-    EntityType.GRUDGE,
-    EntityType.SLOT,
-    EntityType.BALL_AND_CHAIN,
-    EntityType.SPIKEBALL,
-    EntityType.SHOPKEEPER,
     EntityType.FIREPLACE,
-    EntityType.CONSTANT_STONE_SHOOTER,
-    EntityType.BRIMSTONE_HEAD,
-    EntityType.GAPING_MAW,
-    EntityType.BROKEN_GAPING_MAW,
-    EntityType.GRIMACE,
-    EntityType.STONEY,
-    EntityType.QUAKE_GRIMACE,
-    EntityType.BOMB_GRIMACE,
-    EntityType.MOCKULUS,
     EntityType.MOVABLE_TNT,
-    EntityType.BOMB_GRIMACE,
-    EntityType.SLOT,
     EntityType.GENERIC_PROP,
   ].includes(entity.Type);
   const blockList = [
-    !isEnemy,
     !canBeDamaged,
     hideHp,
+    isEffect,
     isPlayer,
     blockedTypes,
     isGeminiConnection,
@@ -172,6 +160,8 @@ export const isAllowedEntity = (entity: Entity, source?: "damage"): boolean => {
       EntityType[entity.Type]
     } variant: ${entity.Variant}, subType: ${entity.SubType}, parent: ${
       entity.Parent
+    }, invincible: ${entity.IsInvincible()} , health: ${entity.HitPoints}/${
+      entity.MaxHitPoints
     }, child: ${entity.Child} (${arrayToString(blockList)})`,
     UTILS_PREFIX,
   );
