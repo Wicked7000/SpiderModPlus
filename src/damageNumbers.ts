@@ -31,7 +31,7 @@ export const createDamageNumberFromDamage = (
   entity: Entity,
   amount: number,
 ): void => {
-  if (amount < 0 || !isAllowedEntity(entity, "damage")) {
+  if (amount <= 0 || !isAllowedEntity(entity)) {
     return;
   }
 

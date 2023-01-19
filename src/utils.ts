@@ -101,39 +101,39 @@ export const clearAllOnSpidermod = (): void => {
 export const isDynamicEntity = (entity: Entity): boolean =>
   [EntityType.CHUB, EntityType.LARRY_JR, EntityType.PIN].includes(entity.Type);
 
-const allowedEntityCache: Record<string, boolean> = {};
+export const resetEntityAllowedCache = (): void => {
+  allowedEntityCache = {};
+};
+
+let allowedEntityCache: Record<string, boolean> = {};
+
+export const canEntityBeDamaged = (entity: Entity): boolean =>
+  !entity.IsInvincible() &&
+  entity.IsEnemy() &&
+  entity.IsVulnerableEnemy() &&
+  !entity.IsDead();
 
 /* We don't want to display damage for certain entities.
    Is not cached for dynamic (segmented) enemies.
 */
-export const isAllowedEntity = (entity: Entity, source?: "damage"): boolean => {
-  const entityId = `${getEntityID(entity)}:${
-    entity.Parent !== undefined
-  }:${entity.IsInvincible()}`;
+export const isAllowedEntity = (entity: Entity): boolean => {
+  const childOfBoss =
+    entity.Parent !== undefined &&
+    ![EntityType.RAG_MAN, EntityType.RAG_MEGA].includes(entity.Parent.Type);
+
+  const entityId = `${getEntityID(entity)}:${childOfBoss}`;
   if (entityId in allowedEntityCache) {
     const value = allowedEntityCache[entityId];
-    if (source !== "damage") {
-      debugLog(
-        `isAllowedEntity ${value ?? false ? "blocked" : "allowed"} entity ${
-          EntityType[entity.Type]
-        } variant: ${entity.Variant}, subType: ${entity.SubType} CACHED)`,
-        UTILS_PREFIX,
-      );
-    }
     return value ?? false;
   }
 
-  const canBeDamaged =
-    entity.IsEnemy() &&
-    entity.IsVulnerableEnemy() &&
-    !entity.IsInvincible() &&
-    !entity.IsDead();
   const isEffect = entity.ToEffect() !== undefined;
   const isPlayer = entity.ToPlayer() !== undefined;
-  const hideHp = entity.HasEntityFlags(EntityFlag.HIDE_HP_BAR);
+  const hideHp =
+    entity.HasEntityFlags(EntityFlag.HIDE_HP_BAR) &&
+    ![EntityType.ULTRA_GREED].includes(entity.Type);
   const isGeminiConnection =
     entity.Variant === 20 && entity.Type === EntityType.GEMINI;
-  const childOfBoss = entity.Parent !== undefined && isDynamicEntity(entity);
 
   const blockedTypes = [
     EntityType.FIREPLACE,
@@ -141,7 +141,6 @@ export const isAllowedEntity = (entity: Entity, source?: "damage"): boolean => {
     EntityType.GENERIC_PROP,
   ].includes(entity.Type);
   const blockList = [
-    !canBeDamaged,
     hideHp,
     isEffect,
     isPlayer,
@@ -155,16 +154,23 @@ export const isAllowedEntity = (entity: Entity, source?: "damage"): boolean => {
     (previous, current) => previous || current,
   );
 
-  debugLog(
-    `isAllowedEntity ${anyBlockedEntities ? "blocked" : "allowed"} entity ${
-      EntityType[entity.Type]
-    } variant: ${entity.Variant}, subType: ${entity.SubType}, parent: ${
-      entity.Parent
-    }, invincible: ${entity.IsInvincible()} , health: ${entity.HitPoints}/${
-      entity.MaxHitPoints
-    }, child: ${entity.Child} (${arrayToString(blockList)})`,
-    UTILS_PREFIX,
-  );
+  // Edge case when ragman spawns them sometimes.
+  if (entity.HitPoints < 0 && entity.Type === EntityType.RAGLING) {
+    return true;
+  }
+
+  if (anyBlockedEntities) {
+    debugLog(
+      `isAllowedEntity ${anyBlockedEntities ? "blocked" : "allowed"} entity ${
+        EntityType[entity.Type]
+      } variant: ${entity.Variant}, subType: ${entity.SubType}, parent: ${
+        entity.Parent
+      }, health: ${entity.HitPoints}/${entity.MaxHitPoints}, child: ${
+        entity.Child
+      } (${arrayToString(blockList)})`,
+      UTILS_PREFIX,
+    );
+  }
 
   const isAllowed = !anyBlockedEntities;
   allowedEntityCache[entityId] = isAllowed;
