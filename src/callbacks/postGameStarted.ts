@@ -1,5 +1,5 @@
 import { initTextItems } from "../damageNumbers";
-import { resetState } from "../modState";
+import { resetState, state } from "../modState";
 import { MOD_NAME, resetEntityAllowedCache } from "../utils";
 
 export const postGameStartedCallback = (): void => {
@@ -8,4 +8,7 @@ export const postGameStartedCallback = (): void => {
   initTextItems();
 
   Isaac.DebugString(`${MOD_NAME} - new run started!`);
+  if (!state.font.IsLoaded()) {
+    state.font.Load("font/pftempestasevencondensed.fnt");
+  }
 };

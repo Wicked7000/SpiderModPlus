@@ -1,7 +1,11 @@
-import { EffectVariant } from "isaac-typescript-definitions";
+import type { EffectVariant } from "isaac-typescript-definitions";
 
 export const CustomEffectVariants = {
-  SpiderModHealth: Isaac.GetEntityVariantByName(
-    "SpidermodHealth",
-  ) as unknown as EffectVariant,
+  EmptyEntity: Isaac.GetEntityVariantByName("emptyEntity") as EffectVariant,
+  SpiderModHealthForeground: Isaac.GetEntityVariantByName(
+    "SpidermodHealthForeground",
+  ) as EffectVariant,
+  SpiderModHealthBackground: Isaac.GetEntityVariantByName(
+    "SpidermodHealthBackground",
+  ) as EffectVariant,
 } as const;

@@ -6,6 +6,7 @@ import {
 import { copyColor, getEntityID, getRandomInt } from "isaacscript-common";
 import { debugLog } from "./logging";
 import { state } from "./modState";
+import { configObject } from "./config";
 
 const UTILS_PREFIX = "Utils";
 
@@ -82,6 +83,27 @@ export const arrayToString = (
   return stringList.join(",");
 };
 
+// Entities that are allowed healthbars even if they are a child of an entity.
+export const isAllowedParentedEntity = (entity: Entity): boolean => {
+  const isAllowed = [
+    EntityType.RING_OF_FLIES,
+    EntityType.SWARM,
+    EntityType.ARMY_FLY,
+    EntityType.HUSH_FLY,
+    EntityType.WILLO,
+    EntityType.RAGLING,
+    // Because he can re-spawn his head.
+    EntityType.RAG_MAN,
+    EntityType.FLY,
+    EntityType.ATTACK_FLY,
+    EntityType.SISTERS_VIS,
+  ].includes(entity.Type);
+
+  const isAllowedGemini =
+    entity.Type === EntityType.GEMINI && entity.Variant >= 10;
+  return isAllowed || isAllowedGemini;
+};
+
 export const getRandomVectorSize = (size: number): Vector => {
   const randomX = getRandomInt(0, size);
   const randomY = getRandomInt(0, size);
@@ -89,17 +111,17 @@ export const getRandomVectorSize = (size: number): Vector => {
 };
 
 export const clearAllOnSpidermod = (): void => {
-  for (const descriptor of Object.values(state.healthBars)) {
-    descriptor.entityEffects.background?.Remove();
-    descriptor.entityEffects.foreground?.Remove();
+  for (const [ptrHash, _] of pairs(state.healthBars)) {
+    const healthbars = state.healthBars[ptrHash];
+    if (healthbars !== undefined) {
+      healthbars.entityEffects.background?.Remove();
+      healthbars.entityEffects.foreground?.Remove();
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-    delete state.healthBars[GetPtrHash(descriptor.tracking)];
+    delete state.healthBars[ptrHash];
   }
 };
-
-// Entities that are segmented are considered 'dynamic'.
-export const isDynamicEntity = (entity: Entity): boolean =>
-  [EntityType.CHUB, EntityType.LARRY_JR, EntityType.PIN].includes(entity.Type);
 
 export const resetEntityAllowedCache = (): void => {
   allowedEntityCache = {};
@@ -113,15 +135,53 @@ export const canEntityBeDamaged = (entity: Entity): boolean =>
   entity.IsVulnerableEnemy() &&
   !entity.IsDead();
 
+export const canDisplayHealthDamageBase = (entityPtr: EntityPtr): boolean => {
+  const entity = entityPtr.Ref;
+  if (entity === undefined) {
+    return true;
+  }
+
+  const isVisible = entity.IsVisible();
+  const canTakeDamage = canEntityBeDamaged(entity);
+  const notAllowed = !isAllowedEntity(entity);
+  const isNonParentEntity =
+    entity.Parent !== undefined && !isAllowedParentedEntity(entity);
+  if (notAllowed || isNonParentEntity || !isVisible || !canTakeDamage) {
+    return false;
+  }
+  return true;
+};
+
+export const canHaveDamageNumbers = (entityPtr: EntityPtr): boolean => {
+  const entity = entityPtr.Ref;
+  if (entity === undefined) {
+    return true;
+  }
+
+  if (!configObject.persistent.bossDamageNums && entity.IsBoss()) {
+    return false;
+  }
+
+  return canDisplayHealthDamageBase(entityPtr);
+};
+
+export const canHaveHealthbar = (entityPtr: EntityPtr): boolean => {
+  const entity = entityPtr.Ref;
+  if (entity === undefined) {
+    return true;
+  }
+
+  if (!configObject.persistent.bossHealthBars && entity.IsBoss()) {
+    return false;
+  }
+  return canDisplayHealthDamageBase(entityPtr);
+};
+
 /* We don't want to display damage for certain entities.
    Is not cached for dynamic (segmented) enemies.
 */
 export const isAllowedEntity = (entity: Entity): boolean => {
-  const childOfBoss =
-    entity.Parent !== undefined &&
-    ![EntityType.RAG_MAN, EntityType.RAG_MEGA].includes(entity.Parent.Type);
-
-  const entityId = `${getEntityID(entity)}:${childOfBoss}`;
+  const entityId = `${getEntityID(entity)}`;
   if (entityId in allowedEntityCache) {
     const value = allowedEntityCache[entityId];
     return value ?? false;
@@ -146,7 +206,6 @@ export const isAllowedEntity = (entity: Entity): boolean => {
     isPlayer,
     blockedTypes,
     isGeminiConnection,
-    childOfBoss,
   ];
 
   // Returns true if there is a blocked entity.

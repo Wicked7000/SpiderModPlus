@@ -1,4 +1,5 @@
 // This is the configuration file for ESLint, the TypeScript linter:
+
 // https://eslint.org/docs/latest/user-guide/configuring
 module.exports = {
   extends: [

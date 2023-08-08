@@ -1,7 +1,10 @@
 import { getRandomInt } from "isaacscript-common";
-import { debugLog } from "./logging";
 import { gameIsAvailable, state } from "./modState";
-import { getRandomVectorSize, isAllowedEntity } from "./utils";
+import {
+  getRandomVectorSize,
+  isAllowedEntity,
+  canHaveDamageNumbers,
+} from "./utils";
 
 const MAX_TEXT_ITEMS = 15;
 const LIFETIME_SECONDS = 1.5;
@@ -23,15 +26,17 @@ export const initTextItems = (): void => {
     state.textItems.push(undefined);
     amount++;
   }
-
-  state.font.Load("font/pftempestasevencondensed.fnt");
 };
 
 export const createDamageNumberFromDamage = (
   entity: Entity,
   amount: number,
 ): void => {
-  if (amount <= 0 || !isAllowedEntity(entity)) {
+  if (
+    amount <= 0 ||
+    !isAllowedEntity(entity) ||
+    !canHaveDamageNumbers(EntityPtr(entity))
+  ) {
     return;
   }
 
@@ -51,8 +56,6 @@ export const createDamageNumberFromDamage = (
     ticks: 0,
   };
   state.lastTextItemIndex = (state.lastTextItemIndex + 1) % MAX_TEXT_ITEMS;
-
-  debugLog(`Added new damage number ${damageText}`, "DamageNumbers");
 };
 
 // 60 Times per second.

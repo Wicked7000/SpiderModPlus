@@ -3,8 +3,7 @@
     <name>SpiderMod+</name>
     <directory>spidermod+</directory>
     <id>2918355263</id>
-    <description>
-    SpiderMod+ gives the effect of spider mod constantly without the need for the item.
+    <description>SpiderMod+ gives the effect of spider mod constantly without the need for the item.
 
 If the player picks up the spider mod item this mod will automatically disable and just use the default spidermod item behaviour.
 
@@ -12,7 +11,7 @@ Configuration options for this mod will be coming out in the future to customise
 
 Let me know if you encounter any issues while using!
   </description>
-    <version>1.9</version>
+    <version>1.16</version>
     <visibility>Public</visibility>
     <tag id="Tweaks"/>
     <tag id="Graphics"/>

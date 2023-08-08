@@ -1,12 +1,17 @@
-import { copyColor, spawnEffectWithSeed, VectorZero } from "isaacscript-common";
-import { CustomEffectVariants } from "./customEntities";
-import { gameIsAvailable, state, TrackingDescriptor } from "./modState";
 import {
-  canEntityBeDamaged,
+  copyColor,
+  round,
+  spawnEffectWithSeed,
+  VectorZero,
+} from "isaacscript-common";
+import { CustomEffectVariants } from "./customEntities";
+import type { TrackingDescriptor } from "./modState";
+import { gameIsAvailable, state } from "./modState";
+import {
   hsvToRGB,
-  isAllowedEntity,
-  isDynamicEntity,
+  isAllowedParentedEntity,
   setSpriteTintColor,
+  canHaveHealthbar,
 } from "./utils";
 
 function getPositionBasedOnEntity(entity: Entity, yOffset?: number) {
@@ -25,52 +30,39 @@ function getPositionBasedOnEntityForeground(entity: Entity, yOffset?: number) {
   return pos;
 }
 
-function spawnHealthbar(entity: Entity) {
-  const additionalOffset = isDynamicEntity(entity) ? 100 : 0;
+function spawnHealthbar(entityPtr: EntityPtr) {
+  const entity = entityPtr.Ref;
+  if (entity === undefined) {
+    return;
+  }
+
+  const additionalDepth = entity.Child !== undefined ? 100 : 0;
 
   const pos = getPositionBasedOnEntity(entity);
   const posForeground = getPositionBasedOnEntityForeground(entity);
   const background = spawnEffectWithSeed(
-    CustomEffectVariants.SpiderModHealth,
+    CustomEffectVariants.SpiderModHealthBackground,
     0,
     pos,
     1 as Seed,
   );
-  background.DepthOffset = additionalOffset + 1;
+  background.DepthOffset = additionalDepth + 1;
   background.SpriteOffset = VectorZero;
-  loadHealthbarSprite(background.GetSprite(), "background");
 
   const foreground = spawnEffectWithSeed(
-    CustomEffectVariants.SpiderModHealth,
+    CustomEffectVariants.SpiderModHealthForeground,
     0,
     posForeground,
     1 as Seed,
   );
-  loadHealthbarSprite(foreground.GetSprite(), "foreground");
-  foreground.DepthOffset = additionalOffset + 2;
+  foreground.DepthOffset = additionalDepth + 2;
   foreground.SpriteOffset = VectorZero;
+  const sprite = foreground.GetSprite();
+  const color = copyColor(sprite.Color);
+  color.SetTint(0, 1, 0, 1);
+  sprite.Color = color;
+
   return { background, foreground };
-}
-
-function loadHealthbarSprite(
-  sprite: Sprite,
-  type: "background" | "foreground",
-) {
-  const spriteFile =
-    type === "background" ? "background.anm2" : "foreground.anm2";
-  sprite.Load(spriteFile, true);
-  sprite.Offset = VectorZero;
-  sprite.SetAnimation("Default");
-  sprite.SetFrame(0);
-
-  // Set foreground to be red.
-  if (type === "foreground") {
-    const color = copyColor(sprite.Color);
-    color.SetTint(0, 1, 0, 1);
-    sprite.Color = color;
-  }
-
-  return sprite;
 }
 
 const spawnHealthbarIfNotFound = (descriptor: TrackingDescriptor) => {
@@ -79,38 +71,31 @@ const spawnHealthbarIfNotFound = (descriptor: TrackingDescriptor) => {
     descriptor.entityEffects.foreground === undefined
   ) {
     const effects = spawnHealthbar(descriptor.tracking);
-    descriptor.entityEffects.foreground = effects.foreground;
-    descriptor.entityEffects.background = effects.background;
+    if (effects !== undefined) {
+      descriptor.entityEffects.foreground = effects.foreground;
+      descriptor.entityEffects.background = effects.background;
+      return true;
+    }
   }
+  return false;
 };
 
-export const removeHealthbar = (entity: Entity): void => {
-  const hash = GetPtrHash(entity);
-  const descriptor = state.healthBars[hash];
+export const removeHealthbar = (ptrHash: PtrHash): void => {
+  const descriptor = state.healthBars[ptrHash];
   if (descriptor !== undefined) {
     descriptor.entityEffects.background?.Remove();
     descriptor.entityEffects.foreground?.Remove();
-    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-    delete state.healthBars[hash];
   }
 };
 
-// Hides healthbar if certain conditions are met.
 const hideHealthbars = (trackingDescriptor: TrackingDescriptor) => {
-  const shouldHide =
-    !trackingDescriptor.tracking.IsVisible() ||
-    !canEntityBeDamaged(trackingDescriptor.tracking);
-  if (shouldHide) {
-    const { background, foreground } = trackingDescriptor.entityEffects;
-    if (background !== undefined) {
-      background.SpriteScale = Vector(0, 0);
-    }
-    if (foreground !== undefined) {
-      foreground.SpriteScale = Vector(0, 0);
-    }
-    return true;
+  const { background, foreground } = trackingDescriptor.entityEffects;
+  if (background !== undefined) {
+    background.SpriteScale = Vector(0, 0);
   }
-  return false;
+  if (foreground !== undefined) {
+    foreground.SpriteScale = Vector(0, 0);
+  }
 };
 
 const ensureVisible = (trackingDescriptor: TrackingDescriptor) => {
@@ -123,30 +108,19 @@ const ensureVisible = (trackingDescriptor: TrackingDescriptor) => {
   }
 };
 
-const checkIfHealthbarIsInvalid = (trackingDescriptor: TrackingDescriptor) => {
-  const notAllowed = !isAllowedEntity(trackingDescriptor.tracking);
-  const notExists = !trackingDescriptor.tracking.Exists();
-  if (notAllowed || notExists) {
-    if (trackingDescriptor.tracking.Child !== undefined) {
-      trackingDescriptor.tracking = trackingDescriptor.tracking.Child;
-      return false;
+// Returns health in range of 0-100.
+const getPercentage = (max: number, current: number) => {
+    if (current > max) {
+        return 100;
     }
-    removeHealthbar(trackingDescriptor.tracking);
-
-    return true;
-  }
-  return false;
+    const percentageHealth = round((current / max) * 100);
+    const nonNegativePercentageHealth =
+        percentageHealth > 0 ? percentageHealth : 0;
+    return nonNegativePercentageHealth;
 };
 
 const getHealthPercentage = (entity: Entity) => {
-  const getPercentage = (max: number, current: number) => {
-    const percentageHealth = current / max;
-    const nonNegativePercentageHealth =
-      percentageHealth > 0 ? percentageHealth : 0;
-    return nonNegativePercentageHealth;
-  };
-
-  if (entity.Child === undefined) {
+  if (entity.Child === undefined || isAllowedParentedEntity(entity)) {
     return getPercentage(entity.MaxHitPoints, entity.HitPoints);
   }
 
@@ -167,21 +141,24 @@ export const renderHealthbars = (): void => {
     return;
   }
 
-  for (const trackingDescriptor of Object.values(state.healthBars)) {
-    if (checkIfHealthbarIsInvalid(trackingDescriptor)) {
+  for (const [ptrHash, trackingDescriptor] of pairs(state.healthBars)) {
+    const entity = trackingDescriptor.tracking.Ref;
+    if (entity === undefined) {
+      // Remove entity (If we don't check this I think it may cause crashes).
+      removeHealthbar(ptrHash);
       continue;
-    }
-    if (hideHealthbars(trackingDescriptor)) {
-      continue;
-    } else {
-      ensureVisible(trackingDescriptor);
     }
 
+    // Hide non-parent entities.
+    if (!canHaveHealthbar(trackingDescriptor.tracking)) {
+      hideHealthbars(trackingDescriptor);
+      continue;
+    }
+    ensureVisible(trackingDescriptor);
+
     spawnHealthbarIfNotFound(trackingDescriptor);
-    const pos = getPositionBasedOnEntity(trackingDescriptor.tracking);
-    const posForeground = getPositionBasedOnEntityForeground(
-      trackingDescriptor.tracking,
-    );
+    const pos = getPositionBasedOnEntity(entity);
+    const posForeground = getPositionBasedOnEntityForeground(entity);
 
     if (
       trackingDescriptor.entityEffects.foreground !== undefined &&
@@ -190,18 +167,21 @@ export const renderHealthbars = (): void => {
       trackingDescriptor.entityEffects.background.Position = pos;
       trackingDescriptor.entityEffects.foreground.Position = posForeground;
 
-      const healthPercentage = getHealthPercentage(trackingDescriptor.tracking);
+      const healthAmount = getHealthPercentage(entity);
+      if (trackingDescriptor.previousHealthAmount !== healthAmount) {
+        const sprite = trackingDescriptor.entityEffects.foreground.GetSprite();
+        const healthPercentage = healthAmount / 100;
 
-      const sprite = trackingDescriptor.entityEffects.foreground.GetSprite();
+        const hue = 130.0 - 130.0 * (1.0 - healthPercentage);
+        const range = hsvToRGB(hue, 1, 1);
 
-      const hue = 130.0 - 130.0 * (1.0 - healthPercentage);
-      const range = hsvToRGB(hue, 1, 1);
-
-      setSpriteTintColor({ ...range, a: 1 }, sprite);
-      trackingDescriptor.entityEffects.foreground.SpriteScale = Vector(
-        healthPercentage,
-        1,
-      );
+        setSpriteTintColor({ ...range, a: 1 }, sprite);
+        trackingDescriptor.entityEffects.foreground.SpriteScale = Vector(
+          healthPercentage,
+          1,
+        );
+        trackingDescriptor.previousHealthAmount = healthPercentage;
+      }
     }
   }
 };

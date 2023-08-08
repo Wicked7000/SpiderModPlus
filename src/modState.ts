@@ -13,7 +13,8 @@ export interface TrackingDescriptor {
     background?: EntityEffect;
     foreground?: EntityEffect;
   };
-  tracking: Entity;
+  previousHealthAmount: number;
+  tracking: EntityPtr;
 }
 
 interface GlobalState {
@@ -21,8 +22,7 @@ interface GlobalState {
 
   healthBar?: Sprite;
   healthBarRed?: Sprite;
-  healthBars: Record<number, TrackingDescriptor>;
-
+  healthBars: Record<PtrHash, TrackingDescriptor>;
   textItems: Array<DamageNumber | undefined>;
   lastTextItemIndex: number;
   font: Font;

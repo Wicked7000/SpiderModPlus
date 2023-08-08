@@ -1,5 +1,8 @@
+import { configObject } from "../config";
 import { addTrackedEntity } from "../entityTracker";
 
 export const entityPostInitCallback = (entity: Entity): void => {
-  addTrackedEntity(entity);
+  if (configObject.persistent.healthBars) {
+    addTrackedEntity(entity);
+  }
 };

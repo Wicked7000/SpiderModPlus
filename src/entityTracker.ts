@@ -18,7 +18,8 @@ export const addTrackedEntity = (entity: Entity): void => {
         background: undefined,
         foreground: undefined,
       },
-      tracking: entity,
+      previousHealthAmount: 100,
+      tracking: EntityPtr(entity),
     };
     debugLog(
       `Tracked entity added ${EntityType[entity.Type]} variant: ${
@@ -32,24 +33,14 @@ export const addTrackedEntity = (entity: Entity): void => {
 export const removeTrackedEntity = (entity: Entity): void => {
   const entityHash = GetPtrHash(entity);
   if (entityHash in state.healthBars) {
-    const child = entity.Child;
-    if (child !== undefined) {
-      // Rewrite to be the last parent descriptor (segmented enemies).
-      const newHash = GetPtrHash(child);
-      const current = state.healthBars[entityHash];
-      if (current !== undefined) {
-        current.tracking = child;
-        state.healthBars[newHash] = current;
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-        delete state.healthBars[entityHash];
-      }
-      return;
-    }
-    removeHealthbar(entity);
+    removeHealthbar(entityHash);
 
     debugLog(
       `Tracked entity removed ${EntityType[entity.Type]}, ${entityHash}`,
       entityTrackerPrefix,
     );
+
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+    delete state.healthBars[entityHash];
   }
 };
